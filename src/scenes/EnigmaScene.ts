@@ -33,9 +33,10 @@ export class EnigmaScene extends Phaser.Scene {
 
   create() {
     const e = ENIGMA_LINHA_DO_TEMPO;
-    this.cameras.main.setBackgroundColor(0x1a1626);
+    this.add.image(0, 0, 'fundo-home').setOrigin(0).setDisplaySize(LARGURA, 540);
+    this.add.rectangle(0, 0, LARGURA, 540, 0x0b0820, 0.6).setOrigin(0);
     texto(this, 20, 14, e.titulo, 22, TXT.ouro, { fontStyle: 'bold' });
-    new Botao(this, LARGURA - 70, 30, 100, 32, 'Voltar', () => this.scene.start('Hub'), COR.painelClaro + 0x202020, 13);
+    new Botao(this, LARGURA - 70, 30, 110, 36, '‹ Mapa', () => this.scene.start('Mapa'), COR.cinzaBotao, 14);
 
     painel(this, 20, 56, LARGURA - 40, 78, COR.painelClaro);
     texto(this, 36, 66, `${e.narrador} diz:`, 13, TXT.destaque, { fontStyle: 'bold' });
@@ -118,7 +119,7 @@ export class EnigmaScene extends Phaser.Scene {
         'Portão aberto!',
         `${resumo}\n\n+${ganhos} Commits. O caminho até O Monolito está livre.`,
         'Voltar ao mapa',
-        () => this.scene.start('Hub'),
+        () => this.scene.start('Mapa'),
       );
       return;
     }

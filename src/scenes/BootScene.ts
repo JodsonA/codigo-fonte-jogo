@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
-import { ARTES, dataUri } from '../arte/personagens';
+import { ARTES as ARTES_PERSONAGENS, dataUri } from '../arte/personagens';
+import { ARTES_CENARIO } from '../arte/cenario';
+
+const ARTES = [...ARTES_PERSONAGENS, ...ARTES_CENARIO];
 import { TXT, texto, LARGURA, ALTURA } from './ui';
 
 /** Converte a arte SVG em texturas antes de abrir o jogo. */
@@ -9,7 +12,7 @@ export class BootScene extends Phaser.Scene {
   create() {
     texto(this, LARGURA / 2, ALTURA / 2, 'Compilando heróis...', 20, TXT.suave).setOrigin(0.5);
     let faltam = ARTES.length;
-    const pronto = () => { if (--faltam === 0) this.scene.start('Hub'); };
+    const pronto = () => { if (--faltam === 0) this.scene.start('Home'); };
     this.textures.on(Phaser.Textures.Events.ADD, pronto);
     this.textures.on(Phaser.Textures.Events.ERROR, pronto);
     for (const a of ARTES) this.textures.addBase64(a.chave, dataUri(a.svg));

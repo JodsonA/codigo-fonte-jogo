@@ -44,22 +44,21 @@ export class BatalhaScene extends Phaser.Scene {
   }
 
   create() {
-    this.cameras.main.setBackgroundColor(0x141823);
-    // Chão
-    this.add.rectangle(0, 440, LARGURA, 100, 0x1b2030).setOrigin(0);
-    for (let i = 0; i < 12; i++) this.add.rectangle(i * 90, 440, 2, 100, 0x232a3d).setOrigin(0);
+    this.add.image(0, 0, 'fundo-mapa').setOrigin(0).setDisplaySize(LARGURA, ALTURA);
+    this.add.rectangle(0, 0, LARGURA, ALTURA, 0x0b0820, 0.45).setOrigin(0);
+    this.add.rectangle(0, 0, LARGURA, 66, 0x0b0820, 0.6).setOrigin(0);
 
     this.batalha = new Batalha(this.fase, jogo.herois);
 
     this.cabecalho = texto(this, 20, 14, '', 20, TXT.normal, { fontStyle: 'bold' });
     texto(this, 20, 42, this.fase.descricao, 13, TXT.suave);
-    this.escudo = texto(this, 60, 470, '', 15, TXT.destaque, { fontStyle: 'bold' });
+    this.escudo = texto(this, 40, 490, '', 15, TXT.destaque, { fontStyle: 'bold' });
 
-    const vel = new Botao(this, LARGURA - 200, 30, 130, 32, 'Velocidade 1x', () => {
+    const vel = new Botao(this, LARGURA - 210, 32, 140, 38, 'Velocidade 1x', () => {
       this.velocidade = this.velocidade === 1 ? 2 : 1;
       vel.setRotulo(`Velocidade ${this.velocidade}x`);
-    }, COR.painelClaro + 0x202020, 13);
-    new Botao(this, LARGURA - 70, 30, 100, 32, 'Fugir', () => this.scene.start('Hub'), COR.perigo, 13);
+    }, COR.cinzaBotao, 14);
+    new Botao(this, LARGURA - 70, 32, 110, 38, 'Fugir', () => this.scene.start('Mapa'), COR.perigo, 14);
 
     this.batalha.herois.forEach((u, i) => this.criarHeroi(u, 120, 170 + i * 150));
     this.processarEventos();
@@ -70,7 +69,7 @@ export class BatalhaScene extends Phaser.Scene {
     const img = sprite(this, 0, 0, `heroi-${u.heroi.id}`, 130);
     corpo.add(img);
     this.tweens.add({ targets: img, scaleY: img.scaleY * 1.03, duration: 800 + Math.random() * 300, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
-    texto(this, x + 50, y - 40, `${u.nome} · nv ${u.heroi.nivel}`, 15, TXT.normal, { fontStyle: 'bold' });
+    texto(this, x + 50, y - 40, `${u.heroi.nomeCurto} · nv ${u.heroi.nivel}`, 15, TXT.normal, { fontStyle: 'bold' });
     const vida = new Barra(this, x + 50, y - 8, 190, 12, COR.ok);
     const vidaTxt = texto(this, x + 245, y - 16, '', 12, TXT.suave);
     const energia = new Barra(this, x + 50, y + 12, 190, 7, COR.ouro);
@@ -207,7 +206,7 @@ export class BatalhaScene extends Phaser.Scene {
       if (r.commits > 0) linhas.push(`+${r.commits} Commits`);
       if (!r.primeira) linhas.push('(repetição: recompensa pela metade)');
       linhas.push('');
-      for (const n of r.niveis) if (n.subiu > 0) linhas.push(`${n.nome} subiu para o nível ${jogo.herois.find((h) => h.nome === n.nome)!.nivel}!`);
+      for (const n of r.niveis) if (n.subiu > 0) linhas.push(`${n.nome} subiu para o nível ${jogo.herois.find((h) => h.nomeCurto === n.nome)!.nivel}!`);
       jogo.herois.forEach((h, i) => {
         if (!antes[i] && h.habilidadeDesbloqueada) linhas.push(`Nova habilidade: ${h.habilidade.nome}! Use quando a barra dourada encher.`);
       });
@@ -216,7 +215,7 @@ export class BatalhaScene extends Phaser.Scene {
         titulo = 'O Vale das Interfaces está livre!';
         linhas.push('Você derrotou O Monolito e terminou o capítulo 1 do protótipo. Obrigado por jogar!');
       }
-      modal(this, titulo, linhas.join('\n').trim(), 'Voltar ao mapa', () => this.scene.start('Hub'));
+      modal(this, titulo, linhas.join('\n').trim(), 'Voltar ao mapa', () => this.scene.start('Mapa'));
     } else {
       modal(
         this,
@@ -227,7 +226,7 @@ export class BatalhaScene extends Phaser.Scene {
           'Dica: use Bytes para treinar ataque e vida, ou repita fases anteriores para ganhar XP. ' +
           'Seus heróis também ganham XP em segundo plano com o tempo.',
         'Voltar ao mapa',
-        () => this.scene.start('Hub'),
+        () => this.scene.start('Mapa'),
       );
     }
   }

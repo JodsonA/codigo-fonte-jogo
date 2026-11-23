@@ -84,7 +84,7 @@ export class Jogo {
     const bytes = taxa.bytes * min;
     const xp = taxa.xp * min;
     this.bytes += bytes;
-    const niveis = this.herois.map((h) => ({ nome: h.nome, subiu: h.ganharXp(xp) }));
+    const niveis = this.herois.map((h) => ({ nome: h.nomeCurto, subiu: h.ganharXp(xp) }));
     return { bytes, xp, niveis, tempoMs: ms };
   }
 
@@ -126,7 +126,7 @@ export class Jogo {
     this.bytes += bytes;
     this.commits += commits;
     if (primeira) this.fasesVencidas.push(fase.id);
-    const niveis = this.herois.map((h) => ({ nome: h.nome, subiu: h.ganharXp(xp) }));
+    const niveis = this.herois.map((h) => ({ nome: h.nomeCurto, subiu: h.ganharXp(xp) }));
     this.salvar();
     return { xp, bytes, commits, niveis, primeira };
   }

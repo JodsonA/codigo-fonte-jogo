@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
 import { jogo } from './core/jogo';
 import { BootScene } from './scenes/BootScene';
+import { HomeScene } from './scenes/HomeScene';
+import { MapaScene } from './scenes/MapaScene';
+import { HeroisScene } from './scenes/HeroisScene';
 import { GaleriaScene } from './scenes/GaleriaScene';
-import { HubScene } from './scenes/HubScene';
 import { BatalhaScene } from './scenes/BatalhaScene';
 import { EnigmaScene } from './scenes/EnigmaScene';
 import { ALTURA, COR, LARGURA } from './scenes/ui';
@@ -16,9 +18,21 @@ const game = new Phaser.Game({
   height: ALTURA,
   backgroundColor: COR.fundo,
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: [BootScene, HubScene, BatalhaScene, EnigmaScene, GaleriaScene],
+  scene: [BootScene, HomeScene, MapaScene, HeroisScene, GaleriaScene, BatalhaScene, EnigmaScene],
   callbacks: { preBoot: (g) => g.registry.set('offline', offline) },
 });
+
+// "Processos em segundo plano": o time rende a cada segundo enquanto a aba está aberta.
+let desdeSalvar = 0;
+setInterval(() => {
+  if (document.hidden) return;
+  const g = jogo.aplicarTempo(1000);
+  game.events.emit('idle', g);
+  if (++desdeSalvar >= 10) {
+    desdeSalvar = 0;
+    jogo.salvar();
+  }
+}, 1000);
 
 // Salva ao sair da aba e calcula o progresso offline ao voltar.
 document.addEventListener('visibilitychange', () => {

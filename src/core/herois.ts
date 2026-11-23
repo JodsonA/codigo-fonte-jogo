@@ -22,6 +22,9 @@ export abstract class Heroi {
 
   abstract readonly id: string;
   abstract readonly nome: string;
+  abstract readonly nomeCurto: string;
+  /** Figura histórica que inspirou o personagem (não é um retrato dela). */
+  abstract readonly inspiracao: string;
   abstract readonly iniciais: string;
   abstract readonly papel: Papel;
   abstract readonly cor: number;
@@ -90,7 +93,9 @@ export abstract class Heroi {
 
 export class AdaLovelace extends Heroi {
   readonly id = 'ada';
-  readonly nome = 'Ada Lovelace';
+  readonly nome = 'Ada, a Analista';
+  readonly nomeCurto = 'Ada';
+  readonly inspiracao = 'Ada Lovelace';
   readonly iniciais = 'AL';
   readonly papel = 'Suporte';
   readonly cor = 0x8e7cf0;
@@ -98,7 +103,7 @@ export class AdaLovelace extends Heroi {
   protected readonly ataqueBase = 6;
   protected readonly vidaBase = 60;
   readonly fato =
-    'Em 1843 publicou notas sobre a Máquina Analítica de Babbage. A Nota G traz o que muitos consideram o primeiro algoritmo escrito para uma máquina.';
+    'Ada Lovelace, sua inspiração, publicou em 1843 notas sobre a Máquina Analítica de Babbage. A Nota G traz o que muitos consideram o primeiro algoritmo escrito para uma máquina.';
   readonly habilidade = {
     nome: 'Nota G',
     descricao: 'Prevê os próximos 3 ataques inimigos e os anula. Cura 20% da vida da equipe.',
@@ -126,7 +131,9 @@ export class AdaLovelace extends Heroi {
 
 export class AlanTuring extends Heroi {
   readonly id = 'turing';
-  readonly nome = 'Alan Turing';
+  readonly nome = 'Turing, o Decifrador';
+  readonly nomeCurto = 'Turing';
+  readonly inspiracao = 'Alan Turing';
   readonly iniciais = 'AT';
   readonly papel = 'Dano';
   readonly cor = 0x4fc3f7;
@@ -134,10 +141,10 @@ export class AlanTuring extends Heroi {
   protected readonly ataqueBase = 10;
   protected readonly vidaBase = 45;
   readonly fato =
-    'Em 1936 descreveu a máquina de Turing, um modelo abstrato que define o que um computador consegue calcular.';
+    'Alan Turing, sua inspiração, descreveu em 1936 a máquina de Turing, um modelo abstrato que define o que um computador consegue calcular.';
   readonly habilidade = {
     nome: 'Decifrar',
-    descricao: 'Causa 150% do ataque em todos os inimigos e revela a fraqueza deles: os próximos 4 golpes de Turing em cada um causam dano dobrado.',
+    descricao: 'Causa 150% do ataque em todos os inimigos e revela a fraqueza deles: os próximos 4 golpes dele em cada um causam dano dobrado.',
   };
   readonly codigoAtacar = `class AlanTuring extends Heroi {
   atacar(ctx) {
