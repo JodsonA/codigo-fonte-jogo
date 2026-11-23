@@ -22,6 +22,16 @@ const INIMIGOS: Ficha[] = [
   { chave: 'inimigo-Stack Overflow', nome: 'Stack Overflow', tipo: 'Bug · Capítulo 2', altura: 100, descricao: 'Uma pilha de chamadas que cresceu demais e vive tombando.' },
   { chave: 'inimigo-Variável Global', nome: 'Variável Global', tipo: 'Bug · Capítulo 2', altura: 100, descricao: 'Fantasma que entra em qualquer lugar e mexe em tudo. Golpes fortes.' },
   { chave: 'inimigo-O Global Mutável', nome: 'O Global Mutável', tipo: 'Chefão · Capítulo 2', altura: 142, descricao: 'Gosma que qualquer um pode alterar. Roubou as chaves da Cidadela.' },
+  { chave: 'inimigo-Classe Frágil', nome: 'Classe Frágil', tipo: 'Bug · Capítulo 3', altura: 100, descricao: 'Ovo rachado. Quando a classe base muda, todos os filhos quebram junto.' },
+  { chave: 'inimigo-Diamante', nome: 'Diamante', tipo: 'Bug · Capítulo 3', altura: 100, descricao: 'Aranha em losango: herda o mesmo método por dois caminhos e não sabe qual usar.' },
+  { chave: 'inimigo-Copia e Cola', nome: 'Copia e Cola', tipo: 'Bug · Capítulo 3', altura: 100, descricao: 'Dois bugs idênticos. Código repetido em vez de reaproveitado.' },
+  { chave: 'inimigo-A Rainha Clone', nome: 'A Rainha Clone', tipo: 'Subchefe · Capítulo 3', altura: 132, descricao: 'Bota ovos que são cópias dela mesma, em vez de herdar de uma classe comum.' },
+  { chave: 'inimigo-O Ancestral Corrompido', nome: 'O Ancestral Corrompido', tipo: 'Chefão · Capítulo 3', altura: 142, descricao: 'A classe-mãe da floresta. Todos os descendentes herdam seus bugs.' },
+  { chave: 'inimigo-Cast Inválido', nome: 'Cast Inválido', tipo: 'Bug · Capítulo 4', altura: 100, descricao: 'Bloco quadrado que tenta caber num buraco redondo. Força um tipo que não é o seu.' },
+  { chave: 'inimigo-Switch Gigante', nome: 'Switch Gigante', tipo: 'Bug · Capítulo 4', altura: 100, descricao: 'Um case para cada tipo. Cresce toda vez que surge um tipo novo.' },
+  { chave: 'inimigo-Tipo Fantasma', nome: 'Tipo Fantasma', tipo: 'Bug · Capítulo 4', altura: 100, descricao: 'Diz ser uma coisa e é outra. Quem confia nele recebe undefined.' },
+  { chave: 'inimigo-O Instanceof', nome: 'O Instanceof', tipo: 'Subchefe · Capítulo 4', altura: 132, descricao: 'Inspetor que confere o tipo de tudo antes de agir, em vez de deixar cada objeto agir.' },
+  { chave: 'inimigo-O Imitador', nome: 'O Imitador', tipo: 'Chefão final · Capítulo 4', altura: 142, descricao: 'Um só nome e mil comportamentos errados. Sobrescreve tudo o que toca.' },
 ];
 
 const POR_PAGINA = 6;
@@ -87,7 +97,7 @@ export class GaleriaScene extends Phaser.Scene {
       c.add(img);
       this.tweens.add({ targets: img, scaleY: img.scaleY * 1.04, duration: 900 + i * 80, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
       c.add(texto(this, x + 14, y + 150, f.nome, 15, TXT.normal, { fontStyle: 'bold' }));
-      c.add(texto(this, x + 14, y + 170, f.tipo, 11, f.tipo.startsWith('Chef') ? TXT.perigo : TXT.ouro));
+      c.add(texto(this, x + 14, y + 170, f.tipo, 11, f.tipo.startsWith('Chef') || f.tipo.startsWith('Sub') ? TXT.perigo : TXT.ouro));
       if (f.estrelas) c.add(estrelas(this, x + 22, y + 18, f.estrelas, 16));
       c.add(texto(this, x + 14, y + 188, f.descricao, 12, TXT.suave, { wordWrap: { width: w - 28 }, lineSpacing: 2 }));
     });

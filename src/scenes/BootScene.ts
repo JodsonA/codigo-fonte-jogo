@@ -2,8 +2,9 @@ import Phaser from 'phaser';
 import { ARTES as ARTES_PERSONAGENS, dataUri } from '../arte/personagens';
 import { ARTES_CENARIO } from '../arte/cenario';
 import { ARTES_NOVAS } from '../arte/novos';
+import { ARTES_CAPITULOS_3_4 } from '../arte/capitulos34';
 
-const ARTES = [...ARTES_PERSONAGENS, ...ARTES_CENARIO, ...ARTES_NOVAS];
+const ARTES = [...ARTES_PERSONAGENS, ...ARTES_CENARIO, ...ARTES_NOVAS, ...ARTES_CAPITULOS_3_4];
 import { TXT, texto, LARGURA, ALTURA } from './ui';
 
 /** Converte a arte SVG em texturas antes de abrir o jogo. */

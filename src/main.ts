@@ -10,6 +10,7 @@ import { EnigmaScene } from './scenes/EnigmaScene';
 import { EnigmaQuizScene } from './scenes/EnigmaQuizScene';
 import { InstanciarScene } from './scenes/InstanciarScene';
 import { LojaScene } from './scenes/LojaScene';
+import { PerfilScene } from './scenes/PerfilScene';
 import { ALTURA, COR, LARGURA } from './scenes/ui';
 
 const offline = jogo.coletarOffline();
@@ -21,7 +22,7 @@ const game = new Phaser.Game({
   height: ALTURA,
   backgroundColor: COR.fundo,
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: [BootScene, HomeScene, MapaScene, HeroisScene, GaleriaScene, BatalhaScene, EnigmaScene, EnigmaQuizScene, InstanciarScene, LojaScene],
+  scene: [BootScene, HomeScene, MapaScene, HeroisScene, GaleriaScene, BatalhaScene, EnigmaScene, EnigmaQuizScene, InstanciarScene, LojaScene, PerfilScene],
   callbacks: { preBoot: (g) => g.registry.set('offline', offline) },
 });
 

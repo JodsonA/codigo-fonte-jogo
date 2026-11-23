@@ -26,6 +26,7 @@ export interface InimigoBatalha extends Unidade {
   /** Quantos golpes ainda recebem dano dobrado (fraqueza revelada por Turing). */
   marcado: number;
   chefe: boolean;
+  subchefe: boolean;
   /** Milissegundos restantes com o ataque reduzido. */
   enfraquecido: number;
   /** Contador de golpes (chefões fazem um golpe em área a cada 3). */

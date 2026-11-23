@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { ENIGMAS, type EnigmaQuiz } from '../core/enigmas';
 import { jogo } from '../core/jogo';
+import { CAPITULOS } from '../core/fases';
+import { faseDoEnigma } from '../core/progresso';
 import { Botao, COR, LARGURA, MONO, TXT, cartao, modal, texto, titulo } from './ui';
 
 /** Enigma de perguntas: algumas com código (clique na linha certa), outras de múltipla escolha. */
@@ -19,7 +21,7 @@ export class EnigmaQuizScene extends Phaser.Scene {
   }
 
   create() {
-    this.add.image(0, 0, 'fundo-cidadela').setOrigin(0).setDisplaySize(LARGURA, 540);
+    this.add.image(0, 0, CAPITULOS.find((c) => c.numero === faseDoEnigma(this.enigma.id)?.capitulo)?.fundo ?? 'fundo-cidadela').setOrigin(0).setDisplaySize(LARGURA, 540);
     this.add.rectangle(0, 0, LARGURA, 540, 0x0b0820, 0.62).setOrigin(0);
     titulo(this, 20, 14, this.enigma.titulo, 22, TXT.ouro);
     new Botao(this, LARGURA - 70, 30, 110, 36, '‹ Mapa', () => this.scene.start('Mapa'), COR.cinzaBotao, 14);
@@ -52,7 +54,7 @@ export class EnigmaQuizScene extends Phaser.Scene {
             return;
           }
           const ganhos = jogo.registrarEnigma(this.enigma.id, this.enigma.recompensaCommits);
-          modal(this, 'Portão aberto!', `+${ganhos} Commits. O caminho até o chefão está livre.`, 'Voltar ao mapa', () => this.scene.start('Mapa'));
+          modal(this, 'Portão aberto!', `+${ganhos} Commits. O caminho até ${faseDoEnigma(this.enigma.id)?.nome ?? 'o chefão'} está livre.`, 'Voltar ao mapa', () => this.scene.start('Mapa'));
         });
       } else {
         this.erros++;
@@ -63,7 +65,7 @@ export class EnigmaQuizScene extends Phaser.Scene {
 
     if (p.codigo) {
       const y0 = 196;
-      const alturaLinha = 34;
+      const alturaLinha = Math.min(34, Math.floor(290 / p.codigo.length));
       c.add(this.add.rectangle(20, y0 - 8, LARGURA - 40, p.codigo.length * alturaLinha + 16, 0x0e1118, 0.95).setOrigin(0));
       p.codigo.forEach((linha, i) => {
         const y = y0 + i * alturaLinha;
@@ -72,8 +74,9 @@ export class EnigmaQuizScene extends Phaser.Scene {
         fundo.on('pointerout', () => fundo.setFillStyle(0x1d2333));
         fundo.on('pointerdown', () => responder(i, fundo));
         c.add(fundo);
-        c.add(texto(this, 40, y + 6, `${String(i + 1).padStart(2, ' ')}`, 15, TXT.suave, { fontFamily: MONO }));
-        c.add(texto(this, 76, y + 6, linha, 16, '#c8f7c5', { fontFamily: MONO }));
+        const ty = y + (alturaLinha - 4) / 2;
+        c.add(texto(this, 40, ty, `${String(i + 1).padStart(2, ' ')}`, 15, TXT.suave, { fontFamily: MONO }).setOrigin(0, 0.5));
+        c.add(texto(this, 76, ty, linha, 16, '#c8f7c5', { fontFamily: MONO }).setOrigin(0, 0.5));
       });
     } else if (p.opcoes) {
       p.opcoes.forEach((op, i) => {
@@ -82,7 +85,7 @@ export class EnigmaQuizScene extends Phaser.Scene {
         const fundo = this.add.rectangle(x, y, 430, 90, 0x1d1747, 0.95).setOrigin(0).setStrokeStyle(2, COR.ouro).setInteractive({ useHandCursor: true });
         fundo.on('pointerdown', () => responder(i, fundo));
         c.add(fundo);
-        c.add(titulo(this, x + 215, y + 45, op, 22).setOrigin(0.5));
+        c.add(titulo(this, x + 215, y + 45, op, op.length > 26 ? 16 : 22).setOrigin(0.5).setWordWrapWidth(400).setAlign('center'));
       });
     }
   }

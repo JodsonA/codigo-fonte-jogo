@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { jogo, LIMITE_OFFLINE_MS, type Ganhos } from '../core/jogo';
 import { progressoCapitulo, marcosDoCapitulo, marcoConcluido } from '../core/progresso';
-import { fasesDoCapitulo } from '../core/fases';
+import { CAPITULOS, fasesDoCapitulo } from '../core/fases';
 import { BONUS_BOAS_VINDAS } from '../core/jogo';
 import { capituloAtual, textoEnergia } from './MapaScene';
 import { sprite } from './BootScene';
@@ -74,10 +74,18 @@ export class HomeScene extends Phaser.Scene {
     const g = this.add.graphics();
     g.fillStyle(0xf5c542).fillCircle(56, 52, 32);
     g.fillStyle(0x2b6fd6).fillCircle(56, 52, 28);
-    this.avatar = this.add.image(56, 52, 'heroi-ada');
+    this.avatar = this.add.image(56, 52, `heroi-${jogo.perfil.avatarId}`);
     const mascara = this.make.graphics({}, false).fillCircle(56, 52, 28);
     this.avatar.setMask(mascara.createGeometryMask());
-    titulo(this, 98, 20, 'Desenvolvedor(a)', 18);
+    this.avatar.setScale(150 / this.avatar.height).setY(82);
+    const nick = titulo(this, 98, 20, jogo.perfil.nickname, 18);
+    if (nick.width > 200) nick.setScale(200 / nick.width);
+    // O cartão inteiro abre o perfil.
+    const zona = this.add.zone(14, 12, 300, 82).setOrigin(0).setInteractive({ useHandCursor: true });
+    zona.on('pointerdown', () => this.scene.start('Perfil'));
+    zona.on('pointerover', () => g.setAlpha(0.8));
+    zona.on('pointerout', () => g.setAlpha(1));
+    icone(this, 296, 26, 'editar', 18);
     this.equipe = texto(this, 98, 46, '', 13, TXT.ouro, { fontStyle: 'bold' });
     icone(this, 104, 76, 'coroa', 18);
     this.barraJornada = new Barra(this, 118, 76, 120, 9, COR.ok);
@@ -92,11 +100,13 @@ export class HomeScene extends Phaser.Scene {
     titulo(this, x + 58, 18, 'JORNADA', 16);
     texto(this, x + 290, 21, `Capítulo ${cap.numero}`, 12, TXT.suave).setOrigin(1, 0);
     const marcos = marcosDoCapitulo(cap.numero);
+    const passo = Math.min(26, 220 / Math.max(1, marcos.length - 1));
+    const raio = passo >= 26 ? 8 : 6;
     marcos.forEach((m, i) => {
-      const cx = x + 66 + i * 26;
+      const cx = x + 66 + i * passo;
       const feito = marcoConcluido(jogo, m);
-      this.add.circle(cx, 54, 8, feito ? COR.ok : 0x0e1118).setStrokeStyle(2, feito ? 0xffffff : 0x6b7489);
-      if (i < marcos.length - 1) this.add.rectangle(cx + 8, 54, 10, 3, 0x6b7489).setOrigin(0, 0.5);
+      if (i < marcos.length - 1) this.add.rectangle(cx, 54, passo, 3, 0x6b7489).setOrigin(0, 0.5);
+      this.add.circle(cx, 54, raio, feito ? COR.ok : 0x0e1118).setStrokeStyle(2, feito ? 0xffffff : 0x6b7489);
     });
 
     // Cartão do capítulo atual
@@ -104,12 +114,15 @@ export class HomeScene extends Phaser.Scene {
     const ilustra = this.add.image(x + 153, 140, cap.fundo).setDisplaySize(286, 96);
     const mascara = this.make.graphics({}, false).fillRoundedRect(x + 10, 92, 286, 96, 10);
     ilustra.setMask(mascara.createGeometryMask());
-    this.add.image(x + 236, 140, `inimigo-${cap.chefe}`).setScale(86 / 780);
+    const chefe = this.add.image(x + 236, 140, `inimigo-${cap.chefe}`);
+    chefe.setScale(86 / chefe.height);
     const bugs = [...new Set(fasesDoCapitulo(cap.numero).flatMap((f) => f.ondas.flat()).filter((e) => !e.chefe).map((e) => e.nome))];
     bugs.slice(0, 3).forEach((nome, i) => this.add.image(x + 60 + i * 54, 156, `inimigo-${nome}`).setScale(50 / 360));
-    texto(this, x + 18, 98, `CAPÍTULO ${cap.numero}/4`, 12, '#ffffff', { fontStyle: 'bold', backgroundColor: '#e05561', padding: { x: 6, y: 2 } });
+    texto(this, x + 18, 98, `CAPÍTULO ${cap.numero}/${CAPITULOS.length}`, 12, '#ffffff', { fontStyle: 'bold', backgroundColor: '#e05561', padding: { x: 6, y: 2 } });
     titulo(this, x + 14, 192, cap.nome, 19);
-    texto(this, x + 14, 216, `Reino: ${cap.reino} · 3 fases + 1 enigma`, 12, TXT.suave);
+    const nFases = fasesDoCapitulo(cap.numero).length;
+    const nEnigmas = marcos.length - nFases;
+    texto(this, x + 14, 216, `Reino: ${cap.reino} · ${nFases} fases + ${nEnigmas} enigma${nEnigmas > 1 ? 's' : ''}`, 12, TXT.suave);
     new Botao(this, x + 153, 254, 160, 26, 'VER MAPA', () => {
       this.registry.set('capitulo', cap.numero);
       this.scene.start('Mapa');
@@ -163,9 +176,7 @@ export class HomeScene extends Phaser.Scene {
     const chave = `heroi-${h.id}`;
     if (this.heroiImg.texture.key !== chave) {
       this.heroiImg.setTexture(chave);
-      this.avatar.setTexture(chave);
     }
-    this.avatar.setScale(150 / this.avatar.height).setY(82);
     this.heroiImg.setScale(250 / this.heroiImg.height);
     this.respiracao?.remove();
     this.respiracao = this.tweens.add({ targets: this.heroiImg, scaleY: this.heroiImg.scaleY * 1.025, duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
@@ -187,7 +198,7 @@ export class HomeScene extends Phaser.Scene {
         '2. A batalha é automática. Quando a barra dourada encher, use a habilidade especial.\n' +
         '3. Vença para ganhar XP e Bytes. No nível 5 cada herói desbloqueia sua habilidade.\n' +
         '4. Use Bytes na tela de Heróis para treinar ataque e vida e monte uma equipe de até 4.\n' +
-        '5. Resolva o enigma do portão para enfrentar o chefão.\n' +
+        '5. Resolva os enigmas dos portões para enfrentar o subchefe e o chefão.\n' +
         '6. Cada fase gasta 6 de energia, que recarrega +1 a cada 12 min (até 60).\n' +
         '7. Commits compram giros no Instanciar: 4★ garantido a cada 10 giros e 5★ a cada 50. Fichas compram heróis na Loja.\n\n' +
         'Depois da primeira vitória, seus heróis continuam ganhando Bytes e XP mesmo com o jogo fechado (até 8 horas).',

@@ -33,7 +33,28 @@ interface Save {
   energia?: number;
   energiaEm?: number;
   bonusBoasVindas?: boolean;
+  perfil?: Perfil;
   ultimoSalvamento: number;
+}
+
+export interface Perfil {
+  nickname: string;
+  avatarId: string;
+  criadoEm: number;
+  vitorias: number;
+  derrotas: number;
+}
+
+export const NICK_MIN = 3;
+export const NICK_MAX = 16;
+
+/** Valida o nickname. Devolve a mensagem de erro, ou null se estiver tudo certo. */
+export function validarNickname(bruto: string): string | null {
+  const nick = bruto.trim();
+  if (nick.length < NICK_MIN) return `Use pelo menos ${NICK_MIN} caracteres.`;
+  if (nick.length > NICK_MAX) return `Use no máximo ${NICK_MAX} caracteres.`;
+  if (!/^[\p{L}\p{N}_ .-]+$/u.test(nick)) return 'Use só letras, números, espaço, ponto, hífen e _.';
+  return null;
 }
 
 export interface Ganhos {
@@ -62,6 +83,7 @@ export class Jogo {
   /** Verdadeiro só na sessão em que o presente de boas-vindas foi entregue. */
   bonusRecebidoAgora = false;
   ultimoSalvamento = Date.now();
+  perfil: Perfil = { nickname: 'Desenvolvedor(a)', avatarId: 'ada', criadoEm: Date.now(), vitorias: 0, derrotas: 0 };
 
   static carregar(): Jogo {
     const jogo = new Jogo();
@@ -87,6 +109,8 @@ export class Jogo {
         jogo.energia = s.energia ?? ENERGIA_MAX;
         jogo.energiaEm = s.energiaEm ?? Date.now();
         jogo.bonusBoasVindas = !!s.bonusBoasVindas;
+        if (s.perfil) jogo.perfil = { ...jogo.perfil, ...s.perfil };
+        if (!jogo.colecao.has(jogo.perfil.avatarId)) jogo.perfil.avatarId = 'ada';
       }
     } catch {
       // Save corrompido: começa do zero.
@@ -114,6 +138,7 @@ export class Jogo {
       energia: this.energia,
       energiaEm: this.energiaEm,
       bonusBoasVindas: this.bonusBoasVindas,
+      perfil: this.perfil,
       ultimoSalvamento: this.ultimoSalvamento,
     };
     try {
@@ -269,9 +294,29 @@ export class Jogo {
     this.bytes += bytes;
     this.commits += commits;
     if (primeira) this.fasesVencidas.push(fase.id);
+    this.perfil.vitorias++;
     const niveis = this.darXpEquipe(xp);
     this.salvar();
     return { xp, bytes, commits, niveis, primeira };
+  }
+
+  registrarDerrota() {
+    this.perfil.derrotas++;
+    this.salvar();
+  }
+
+  definirNickname(bruto: string) {
+    const erro = validarNickname(bruto);
+    if (erro) return erro;
+    this.perfil.nickname = bruto.trim().replace(/\s+/g, ' ');
+    this.salvar();
+    return null;
+  }
+
+  definirAvatar(id: string) {
+    if (!this.colecao.has(id)) return;
+    this.perfil.avatarId = id;
+    this.salvar();
   }
 
   registrarEnigma(id: string, commits: number) {

@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
-import { ENIGMA_LINHA_DO_TEMPO, type ItemLinhaDoTempo } from '../core/enigmas';
+import { ENIGMAS, ENIGMA_LINHA_DO_TEMPO, type EnigmaLinhaDoTempo, type ItemLinhaDoTempo } from '../core/enigmas';
+import { CAPITULOS } from '../core/fases';
+import { faseDoEnigma } from '../core/progresso';
 import { jogo } from '../core/jogo';
 import { Botao, COR, LARGURA, TXT, modal, painel, texto } from './ui';
 
@@ -21,10 +23,13 @@ export class EnigmaScene extends Phaser.Scene {
   private verificar!: Botao;
   private retorno!: Phaser.GameObjects.Text;
   private tentativas = 0;
+  private enigma: EnigmaLinhaDoTempo = ENIGMA_LINHA_DO_TEMPO;
 
   constructor() { super('Enigma'); }
 
-  init() {
+  init(data?: { id?: string }) {
+    const e = data?.id ? ENIGMAS[data.id] : undefined;
+    this.enigma = e && e.tipo === 'linha-do-tempo' ? e : ENIGMA_LINHA_DO_TEMPO;
     this.escolhidos = [];
     this.opcoes = [];
     this.espacos = [];
@@ -32,8 +37,9 @@ export class EnigmaScene extends Phaser.Scene {
   }
 
   create() {
-    const e = ENIGMA_LINHA_DO_TEMPO;
-    this.add.image(0, 0, 'fundo-home').setOrigin(0).setDisplaySize(LARGURA, 540);
+    const e = this.enigma;
+    const fundo = CAPITULOS.find((c) => c.numero === faseDoEnigma(e.id)?.capitulo)?.fundo ?? 'fundo-home';
+    this.add.image(0, 0, fundo).setOrigin(0).setDisplaySize(LARGURA, 540);
     this.add.rectangle(0, 0, LARGURA, 540, 0x0b0820, 0.6).setOrigin(0);
     texto(this, 20, 14, e.titulo, 22, TXT.ouro, { fontStyle: 'bold' });
     new Botao(this, LARGURA - 70, 30, 110, 36, '‹ Mapa', () => this.scene.start('Mapa'), COR.cinzaBotao, 14);
@@ -90,7 +96,7 @@ export class EnigmaScene extends Phaser.Scene {
   }
 
   private atualizar(marcarCertos = false) {
-    const certo = [...ENIGMA_LINHA_DO_TEMPO.itens].sort((a, b) => a.ano - b.ano);
+    const certo = [...this.enigma.itens].sort((a, b) => a.ano - b.ano);
     for (const o of this.opcoes) {
       const usado = this.escolhidos.includes(o.item);
       o.fundo.setAlpha(usado ? 0.3 : 1);
@@ -107,7 +113,7 @@ export class EnigmaScene extends Phaser.Scene {
   }
 
   private conferir() {
-    const e = ENIGMA_LINHA_DO_TEMPO;
+    const e = this.enigma;
     const certo = [...e.itens].sort((a, b) => a.ano - b.ano);
     const acertos = this.escolhidos.filter((it, i) => it === certo[i]).length;
     this.tentativas++;
@@ -117,7 +123,7 @@ export class EnigmaScene extends Phaser.Scene {
       modal(
         this,
         'Portão aberto!',
-        `${resumo}\n\n+${ganhos} Commits. O caminho até O Monolito está livre.`,
+        `${resumo}\n\n+${ganhos} Commits. O caminho até ${faseDoEnigma(e.id)?.nome ?? 'o chefão'} está livre.`,
         'Voltar ao mapa',
         () => this.scene.start('Mapa'),
       );

@@ -54,6 +54,7 @@ export class Batalha implements ContextoBatalha {
       cooldown: m.intervalo * (0.6 + Math.random() * 0.4),
       marcado: 0,
       chefe: !!m.chefe,
+      subchefe: !!m.subchefe,
       enfraquecido: 0,
       golpes: 0,
     }));

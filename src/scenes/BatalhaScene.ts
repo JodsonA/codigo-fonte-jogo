@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Batalha, TEMPO_LIMITE } from '../core/batalha';
-import { CAPITULOS, buscarFase, type Fase } from '../core/fases';
+import { CAPITULOS, buscarFase, fasesDoCapitulo, type Fase } from '../core/fases';
 import { DEVOLUCAO_DERROTA, jogo } from '../core/jogo';
 import { Heroi } from '../core/herois';
 import type { HeroiBatalha, InimigoBatalha } from '../core/tipos';
@@ -114,7 +114,7 @@ export class BatalhaScene extends Phaser.Scene {
     const lista = this.batalha.inimigos;
     const ys = lista.length === 1 ? [270] : lista.length === 2 ? [200, 340] : [140, 265, 390];
     lista.forEach((u, i) => {
-      const tam = u.chefe ? 230 : 90;
+      const tam = u.subchefe ? 200 : u.chefe ? 230 : 90;
       const x = u.chefe ? 740 : 700 + (i % 2) * 90;
       const y = ys[i] ?? 270;
       const corpo = this.add.container(x + 300, y);
@@ -155,7 +155,7 @@ export class BatalhaScene extends Phaser.Scene {
         case 'onda':
           this.criarInimigos();
           this.cabecalho.setText(`Fase ${this.fase.id} · ${this.fase.nome}   Onda ${ev.onda + 1}/${this.batalha.totalOndas}`);
-          this.anuncio(this.batalha.inimigos.some((i) => i.chefe) ? 'Chefão!' : `Onda ${ev.onda + 1}`);
+          this.anuncio(this.batalha.inimigos.some((i) => i.subchefe) ? 'Subchefe!' : this.batalha.inimigos.some((i) => i.chefe) ? 'Chefão!' : `Onda ${ev.onda + 1}`);
           break;
         case 'ataque': {
           const o = this.posicao(ev.origem);
@@ -240,17 +240,16 @@ export class BatalhaScene extends Phaser.Scene {
         if (!antes[i] && h.habilidadeDesbloqueada) linhas.push(`Nova habilidade: ${h.habilidade.nome}! Use quando a barra dourada encher.`);
       });
       let titulo = 'Vitória!';
-      if (this.fase.id === '1-3' && r.primeira) {
-        titulo = 'O Vale das Interfaces está livre!';
-        linhas.push('Você derrotou O Monolito. O capítulo 2, a Cidadela Privada, foi liberado!');
-      }
-      if (this.fase.id === '2-3' && r.primeira) {
-        titulo = 'A Cidadela Privada está protegida!';
-        linhas.push('Você derrotou O Global Mutável e terminou os capítulos do protótipo. Obrigado por jogar!');
+      const cap = CAPITULOS.find((c) => c.numero === this.fase.capitulo);
+      const doCap = fasesDoCapitulo(this.fase.capitulo);
+      if (cap && r.primeira && doCap[doCap.length - 1] === this.fase) {
+        titulo = cap.vitoriaTitulo;
+        linhas.push(cap.vitoriaTexto);
       }
       modal(this, titulo, linhas.join('\n').trim(), 'Voltar ao mapa', () => this.scene.start('Mapa'));
     } else {
       jogo.devolverEnergia(DEVOLUCAO_DERROTA);
+      jogo.registrarDerrota();
       const esgotou = this.batalha.tempo >= TEMPO_LIMITE;
       modal(
         this,

@@ -1,5 +1,5 @@
 import { ENIGMAS } from './enigmas';
-import { fasesDoCapitulo } from './fases';
+import { FASES, fasesDoCapitulo, type Fase } from './fases';
 import type { Jogo } from './jogo';
 
 export { ENIGMAS };
@@ -32,4 +32,9 @@ export function capituloLiberado(j: Jogo, capitulo: number) {
   if (capitulo <= 1) return true;
   const anterior = fasesDoCapitulo(capitulo - 1);
   return anterior.length > 0 && j.faseVencida(anterior[anterior.length - 1].id);
+}
+
+/** A fase que o enigma protege (e, por ela, o capítulo do enigma). */
+export function faseDoEnigma(id: string): Fase | undefined {
+  return FASES.find((f) => f.enigmaAntes === id);
 }

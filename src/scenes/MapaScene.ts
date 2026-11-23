@@ -11,12 +11,25 @@ export function capituloAtual() {
 
 export function textoEnergia(v: number) { return `${Math.floor(v)}/${ENERGIA_MAX}`; }
 
-const POSICOES = [
+const POSICOES_CURTAS = [
   { x: 140, y: 330 },
   { x: 330, y: 215 },
   { x: 545, y: 315 },
   { x: 790, y: 205 },
 ];
+
+/** Posições dos marcos no mapa: um caminho curto, ou uma trilha em zigue-zague de duas fileiras para capítulos longos. */
+function posicoes(n: number) {
+  if (n <= POSICOES_CURTAS.length) return POSICOES_CURTAS;
+  const porFileira = Math.ceil(n / 2);
+  const passo = 780 / (porFileira - 1);
+  return Array.from({ length: n }, (_, i) => {
+    const fileira = Math.floor(i / porFileira);
+    const k = i % porFileira;
+    const coluna = fileira === 0 ? k : porFileira - 1 - k;
+    return { x: 90 + coluna * passo, y: (fileira === 0 ? 156 : 300) + (k % 2 ? 16 : -8) };
+  });
+}
 
 type Estado = 'feito' | 'liberado' | 'bloqueado';
 
@@ -27,6 +40,7 @@ export class MapaScene extends Phaser.Scene {
   private detalhe?: Phaser.GameObjects.Container;
   private moedas: Moeda[] = [];
   private cap!: Capitulo;
+  private pos: { x: number; y: number }[] = [];
 
   constructor() { super('Mapa'); }
 
@@ -34,6 +48,7 @@ export class MapaScene extends Phaser.Scene {
     const escolhido = CAPITULOS.find((c) => c.numero === this.registry.get('capitulo'));
     this.cap = escolhido && capituloLiberado(jogo, escolhido.numero) ? escolhido : capituloAtual();
     this.marcos = marcosDoCapitulo(this.cap.numero);
+    this.pos = posicoes(this.marcos.length);
     this.aneis = [];
     this.add.image(0, 0, this.cap.fundo).setOrigin(0).setDisplaySize(LARGURA, 540);
 
@@ -67,7 +82,7 @@ export class MapaScene extends Phaser.Scene {
   }
 
   private desenharCaminho() {
-    const pts = POSICOES.slice(0, this.marcos.length).map((p) => new Phaser.Math.Vector2(p.x, p.y));
+    const pts = this.pos.slice(0, this.marcos.length).map((p) => new Phaser.Math.Vector2(p.x, p.y));
     const curva = new Phaser.Curves.Spline(pts);
     const g = this.add.graphics();
     g.lineStyle(22, 0x6b4a2a, 0.9);
@@ -80,29 +95,33 @@ export class MapaScene extends Phaser.Scene {
   }
 
   private criarNo(m: Marco, i: number) {
-    const { x, y } = POSICOES[i];
+    const { x, y } = this.pos[i];
+    const longo = this.marcos.length > POSICOES_CURTAS.length;
     const est = this.estado(m);
-    const chefe = m.tipo === 'fase' && buscarFase(m.id).ondas.some((o) => o.some((e) => e.chefe));
-    const r = chefe ? 52 : 40;
+    const chefe = m.tipo === 'fase' ? buscarFase(m.id).ondas.flat().find((e) => e.chefe) : undefined;
+    const r = (chefe ? (chefe.subchefe ? 46 : 52) : 40) * (longo ? 0.78 : 1);
     const cor = est === 'feito' ? COR.ok : est === 'liberado' ? (m.tipo === 'enigma' ? COR.ouro : COR.destaque) : 0x6b7489;
 
     this.add.ellipse(x, y + r - 4, r * 2, r * 0.6, 0x000000, 0.3);
     const anel = this.add.circle(x, y, r + 9, 0xffffff, 0).setStrokeStyle(5, 0xffffff, 0);
     this.aneis.push(anel);
     const base = this.add.circle(x, y + 5, r, Phaser.Display.Color.IntegerToColor(cor).darken(30).color);
-    const no = this.add.circle(x, y, r, cor).setStrokeStyle(4, 0xffffff);
+    const no = this.add.circle(x, y, r, cor).setStrokeStyle(4, chefe && !chefe.subchefe ? COR.ouro : 0xffffff);
     if (chefe) {
-      this.add.image(x, y - 4, `inimigo-${this.cap.chefe}`).setScale((r * 1.7) / 780).setAlpha(est === 'bloqueado' ? 0.5 : 1);
+      const img = this.add.image(x, y - 4, `inimigo-${chefe.nome}`);
+      img.setScale((r * 1.7) / img.height).setAlpha(est === 'bloqueado' ? 0.5 : 1);
     } else if (m.tipo === 'enigma') {
-      icone(this, x, y, 'enigma', 46).setAlpha(est === 'bloqueado' ? 0.5 : 1);
+      icone(this, x, y, 'enigma', r * 1.15).setAlpha(est === 'bloqueado' ? 0.5 : 1);
     } else {
-      titulo(this, x, y, m.id, 22).setOrigin(0.5);
+      titulo(this, x, y, m.id, longo ? 17 : 22).setOrigin(0.5);
     }
-    if (est === 'bloqueado') icone(this, x + r * 0.6, y + r * 0.55, 'cadeado', 30);
-    if (est === 'feito') icone(this, x + r * 0.65, y - r * 0.6, 'check', 28);
+    const ic = longo ? 24 : 30;
+    if (est === 'bloqueado') icone(this, x + r * 0.6, y + r * 0.55, 'cadeado', ic);
+    if (est === 'feito') icone(this, x + r * 0.65, y - r * 0.6, 'check', ic - 2);
 
     const nome = m.tipo === 'fase' ? buscarFase(m.id).nome : 'Portão do Enigma';
-    titulo(this, x, y + r + 10, nome, 15, est === 'bloqueado' ? '#c9d1e0' : '#ffffff').setOrigin(0.5, 0);
+    titulo(this, x, y + r + 8, nome, longo ? 12 : 15, est === 'bloqueado' ? '#c9d1e0' : '#ffffff')
+      .setOrigin(0.5, 0).setAlign('center').setWordWrapWidth(longo ? 120 : 220);
 
     if (est === 'liberado') {
       this.tweens.add({ targets: [no, base], scale: 1.08, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.InOut' });

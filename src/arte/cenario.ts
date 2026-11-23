@@ -73,6 +73,15 @@ const ICONES: Record<string, string> = {
     <path d="M10 22 H54 L50 58 H14 Z" fill="#ff9f1c" stroke="#a0600a" stroke-width="3" stroke-linejoin="round"/>
     <path d="M22 24 V16 Q22 6 32 6 Q42 6 42 16 V24" stroke="#a0600a" stroke-width="4" fill="none"/>
     <circle cx="32" cy="40" r="8" fill="#ffd34d" stroke="#a0600a" stroke-width="2"/>`),
+  editar: icone(`
+    <circle cx="32" cy="32" r="28" fill="#2b6fd6" stroke="#fff" stroke-width="3"/>
+    <path d="M20 44 L22 36 L40 18 L46 24 L28 42 Z" fill="#fff"/>
+    <path d="M20 44 L22 36 L28 42 Z" fill="#f5c542"/>`),
+  trofeu: icone(`
+    <path d="M18 8 H46 V26 Q46 42 32 42 Q18 42 18 26 Z" fill="#f5c542" stroke="#a07a10" stroke-width="3"/>
+    <path d="M18 14 H8 Q8 30 20 30 M46 14 H56 Q56 30 44 30" stroke="#a07a10" stroke-width="3" fill="none"/>
+    <rect x="28" y="42" width="8" height="8" fill="#e0a800"/>
+    <rect x="18" y="50" width="28" height="8" rx="2" fill="#e0a800" stroke="#a07a10" stroke-width="2"/>`),
   enigma: icone(`
     <rect x="8" y="8" width="48" height="48" rx="10" fill="#f5c542" stroke="#a07a10" stroke-width="3"/>
     <text x="32" y="44" font-size="30" font-family="monospace" font-weight="bold" fill="#5a3a00" text-anchor="middle">?</text>`),
