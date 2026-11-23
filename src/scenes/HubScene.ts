@@ -3,7 +3,8 @@ import { jogo, LIMITE_OFFLINE_MS, type Ganhos } from '../core/jogo';
 import { FASES } from '../core/fases';
 import { Heroi } from '../core/herois';
 import { ENIGMA_LINHA_DO_TEMPO } from '../core/enigmas';
-import { ALTURA, Barra, Botao, COR, LARGURA, MONO, TXT, formatarTempo, modal, painel, retrato, texto } from './ui';
+import { ALTURA, Barra, Botao, COR, LARGURA, MONO, TXT, formatarTempo, modal, painel, texto } from './ui';
+import { sprite } from './BootScene';
 
 interface CartaoHeroi {
   heroi: Heroi;
@@ -69,6 +70,8 @@ export class HubScene extends Phaser.Scene {
       window.location.reload();
     });
     texto(this, 20, ALTURA - 14, 'Protótipo · o progresso fica salvo neste navegador', 12, TXT.suave).setOrigin(0, 1);
+    const galeria = texto(this, LARGURA / 2, ALTURA - 14, 'Galeria de personagens', 13, TXT.destaque, { fontStyle: 'bold' }).setOrigin(0.5, 1).setInteractive({ useHandCursor: true });
+    galeria.on('pointerdown', () => this.scene.start('Galeria'));
 
     this.atualizarTudo();
 
@@ -117,7 +120,8 @@ export class HubScene extends Phaser.Scene {
   private criarCartao(h: Heroi, x: number, y: number) {
     const w = 295;
     painel(this, x, y, w, 410);
-    retrato(this, x + 50, y + 54, 34, h.cor, h.iniciais);
+    const img = sprite(this, x + 50, y + 56, `heroi-${h.id}`, 100);
+    this.tweens.add({ targets: img, scaleY: img.scaleY * 1.03, duration: 900 + Math.random() * 300, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     texto(this, x + 98, y + 26, h.nome, 20, TXT.normal, { fontStyle: 'bold' });
     texto(this, x + 98, y + 54, `${h.papel} · reino da Abstração`, 13, TXT.suave);
 

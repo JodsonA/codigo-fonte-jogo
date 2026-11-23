@@ -4,7 +4,8 @@ import { buscarFase, type Fase } from '../core/fases';
 import { jogo } from '../core/jogo';
 import { Heroi } from '../core/herois';
 import type { HeroiBatalha, InimigoBatalha } from '../core/tipos';
-import { ALTURA, Barra, Botao, COR, LARGURA, TXT, modal, retrato, texto } from './ui';
+import { ALTURA, Barra, Botao, COR, LARGURA, TXT, modal, texto } from './ui';
+import { sprite } from './BootScene';
 
 interface VisaoHeroi {
   unidade: HeroiBatalha;
@@ -65,7 +66,10 @@ export class BatalhaScene extends Phaser.Scene {
   }
 
   private criarHeroi(u: HeroiBatalha, x: number, y: number) {
-    const corpo = retrato(this, x, y, 36, u.cor, u.heroi.iniciais);
+    const corpo = this.add.container(x - 14, y - 4);
+    const img = sprite(this, 0, 0, `heroi-${u.heroi.id}`, 130);
+    corpo.add(img);
+    this.tweens.add({ targets: img, scaleY: img.scaleY * 1.03, duration: 800 + Math.random() * 300, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     texto(this, x + 50, y - 40, `${u.nome} · nv ${u.heroi.nivel}`, 15, TXT.normal, { fontStyle: 'bold' });
     const vida = new Barra(this, x + 50, y - 8, 190, 12, COR.ok);
     const vidaTxt = texto(this, x + 245, y - 16, '', 12, TXT.suave);
@@ -85,20 +89,17 @@ export class BatalhaScene extends Phaser.Scene {
     const lista = this.batalha.inimigos;
     const ys = lista.length === 1 ? [270] : lista.length === 2 ? [200, 340] : [140, 265, 390];
     lista.forEach((u, i) => {
-      const tam = u.chefe ? 150 : 64;
+      const tam = u.chefe ? 230 : 90;
       const x = u.chefe ? 740 : 700 + (i % 2) * 90;
       const y = ys[i] ?? 270;
       const corpo = this.add.container(x + 300, y);
-      const forma = u.chefe
-        ? this.add.rectangle(0, 0, tam, tam, u.cor).setStrokeStyle(4, 0x000000, 0.4)
-        : this.add.rectangle(0, 0, tam, tam, u.cor).setStrokeStyle(3, 0x000000, 0.35).setAngle(45);
-      const olhos = texto(this, 0, -4, u.chefe ? '[ ! ]' : '!', u.chefe ? 34 : 26, '#0e1118', { fontStyle: 'bold' }).setOrigin(0.5);
-      const nome = texto(this, 0, -tam / 2 - (u.chefe ? 30 : 40), u.nome, 13, TXT.normal, { fontStyle: 'bold' }).setOrigin(0.5);
-      const vida = new Barra(this, -45, tam / 2 + (u.chefe ? 16 : 26), 90, 8, COR.perigo);
-      const marca = texto(this, 0, tam / 2 + (u.chefe ? 32 : 42), '', 11, TXT.ouro).setOrigin(0.5);
-      corpo.add([forma, olhos, nome, ...vida.objetos(), marca]);
+      const forma = sprite(this, 0, 0, `inimigo-${u.nome}`, tam).setFlipX(u.nome === 'Loop Infinito');
+      const nome = texto(this, 0, -tam / 2 - 12, u.nome, 13, TXT.normal, { fontStyle: 'bold' }).setOrigin(0.5);
+      const vida = new Barra(this, -45, tam / 2 + 8, 90, 8, COR.perigo);
+      const marca = texto(this, 0, tam / 2 + 22, '', 11, TXT.ouro).setOrigin(0.5);
+      corpo.add([forma, nome, ...vida.objetos(), marca]);
       this.tweens.add({ targets: corpo, x, duration: 350, ease: 'Back.Out' });
-      this.tweens.add({ targets: forma, scaleY: 0.92, duration: 600 + i * 90, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      this.tweens.add({ targets: forma, scaleY: forma.scaleY * 0.94, duration: 600 + i * 90, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
       this.inimigos.push({ unidade: u, corpo, vida, marca, morto: false });
     });
   }
