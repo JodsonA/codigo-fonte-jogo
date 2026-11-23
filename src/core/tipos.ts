@@ -13,6 +13,10 @@ export interface HeroiBatalha extends Unidade {
   heroi: Heroi;
   energia: number;
   cooldown: number;
+  /** Golpes inimigos que este herói ainda atrai para si (tanques). */
+  provocacao: number;
+  /** Fração do dano reduzida enquanto provoca (0 a 1). */
+  reducao: number;
 }
 
 export interface InimigoBatalha extends Unidade {
@@ -22,6 +26,10 @@ export interface InimigoBatalha extends Unidade {
   /** Quantos golpes ainda recebem dano dobrado (fraqueza revelada por Turing). */
   marcado: number;
   chefe: boolean;
+  /** Milissegundos restantes com o ataque reduzido. */
+  enfraquecido: number;
+  /** Contador de golpes (chefões fazem um golpe em área a cada 3). */
+  golpes: number;
 }
 
 export type Evento =
@@ -45,4 +53,9 @@ export interface ContextoBatalha {
   causarDano(alvo: InimigoBatalha, valor: number, critico?: boolean): number;
   curar(alvo: HeroiBatalha, valor: number): void;
   adicionarEscudo(cargas: number): void;
+  inimigoMaisFraco(): InimigoBatalha | undefined;
+  provocar(eu: HeroiBatalha, golpes: number, reducao: number): void;
+  reforcarEquipe(multiplicador: number, ms: number): void;
+  enfraquecer(alvo: InimigoBatalha, ms: number): void;
+  darEnergia(alvo: HeroiBatalha, quantidade: number): void;
 }

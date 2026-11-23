@@ -6,6 +6,8 @@ export type EstadoBatalha = 'lutando' | 'vitoria' | 'derrota';
 
 const ENERGIA_POR_ATAQUE = 20;
 const PAUSA_ENTRE_ONDAS = 900;
+/** Tempo máximo de uma batalha: depois disso os bugs vencem. */
+export const TEMPO_LIMITE = 150_000;
 
 /** Simulação pura: não desenha nada. A cena só lê `eventos` e o estado. */
 export class Batalha implements ContextoBatalha {
@@ -14,8 +16,11 @@ export class Batalha implements ContextoBatalha {
   ondaAtual = -1;
   estado: EstadoBatalha = 'lutando';
   escudo = 0;
+  /** Bônus de ataque herdado pela equipe (Classe Base) e quanto tempo ainda dura. */
+  buffEquipe = { mult: 1, restante: 0 };
   eventos: Evento[] = [];
   private pausa = 0;
+  tempo = 0;
   private proximoUid = 1;
 
   constructor(readonly fase: Fase, herois: Heroi[]) {
@@ -28,6 +33,8 @@ export class Batalha implements ContextoBatalha {
       heroi: h,
       energia: 0,
       cooldown: h.intervaloAtaque * (0.3 + Math.random() * 0.3),
+      provocacao: 0,
+      reducao: 0,
     }));
     this.iniciarOnda();
   }
@@ -47,18 +54,31 @@ export class Batalha implements ContextoBatalha {
       cooldown: m.intervalo * (0.6 + Math.random() * 0.4),
       marcado: 0,
       chefe: !!m.chefe,
+      enfraquecido: 0,
+      golpes: 0,
     }));
     this.eventos.push({ tipo: 'onda', onda: this.ondaAtual });
   }
 
   atualizar(dt: number) {
     if (this.estado !== 'lutando') return;
+    this.tempo += dt;
+    if (this.tempo >= TEMPO_LIMITE) {
+      this.estado = 'derrota';
+      return;
+    }
 
     if (this.pausa > 0) {
       this.pausa -= dt;
       if (this.pausa <= 0) this.iniciarOnda();
       return;
     }
+
+    if (this.buffEquipe.restante > 0) {
+      this.buffEquipe.restante -= dt;
+      if (this.buffEquipe.restante <= 0) this.buffEquipe.mult = 1;
+    }
+    for (const e of this.inimigos) if (e.enfraquecido > 0) e.enfraquecido = Math.max(0, e.enfraquecido - dt);
 
     for (const h of this.heroisVivos()) {
       h.cooldown -= dt;
@@ -77,16 +97,18 @@ export class Batalha implements ContextoBatalha {
       e.cooldown += e.intervalo;
       const vivos = this.heroisVivos();
       if (vivos.length === 0) break;
-      const alvo = vivos[Math.floor(Math.random() * vivos.length)];
-      this.eventos.push({ tipo: 'ataque', origem: e.uid, alvo: alvo.uid });
-      if (this.escudo > 0) {
-        this.escudo--;
-        this.eventos.push({ tipo: 'bloqueio', alvo: alvo.uid });
+      const fraqueza = e.enfraquecido > 0 ? 0.7 : 1;
+      // Chefões: a cada 3 golpes, um golpe em área que atinge toda a equipe.
+      if (e.chefe && ++e.golpes % 3 === 0) {
+        this.eventos.push({ tipo: 'texto', msg: `${e.nome}: golpe em área!` });
+        for (const h of vivos) this.receberGolpe(e, h, e.ataque * 0.6 * fraqueza, false);
         continue;
       }
-      const valor = variar(e.ataque);
-      alvo.hp = Math.max(0, alvo.hp - valor);
-      this.eventos.push({ tipo: 'dano', alvo: alvo.uid, valor });
+      // Tanques que provocam atraem o golpe; senão o alvo é aleatório.
+      const provocador = vivos.find((h) => h.provocacao > 0);
+      const alvo = provocador ?? vivos[Math.floor(Math.random() * vivos.length)];
+      this.eventos.push({ tipo: 'ataque', origem: e.uid, alvo: alvo.uid });
+      this.receberGolpe(e, alvo, e.ataque * fraqueza, !!provocador);
     }
 
     if (this.heroisVivos().length === 0) {
@@ -95,6 +117,22 @@ export class Batalha implements ContextoBatalha {
       if (this.ondaAtual < this.totalOndas - 1) this.pausa = PAUSA_ENTRE_ONDAS;
       else this.estado = 'vitoria';
     }
+  }
+
+  private receberGolpe(e: InimigoBatalha, alvo: HeroiBatalha, base: number, provocado: boolean) {
+    if (this.escudo > 0) {
+      this.escudo--;
+      this.eventos.push({ tipo: 'bloqueio', alvo: alvo.uid });
+      return;
+    }
+    if (alvo.provocacao > 0) base *= 1 - alvo.reducao;
+    if (provocado) {
+      alvo.provocacao--;
+      if (alvo.provocacao <= 0) alvo.reducao = 0;
+    }
+    const valor = variar(base);
+    alvo.hp = Math.max(0, alvo.hp - valor);
+    this.eventos.push({ tipo: 'dano', alvo: alvo.uid, valor });
   }
 
   podeUsarHabilidade(h: HeroiBatalha) {
@@ -122,7 +160,7 @@ export class Batalha implements ContextoBatalha {
 
   causarDano(alvo: InimigoBatalha, valor: number, critico = false) {
     if (alvo.hp <= 0) return 0;
-    const v = variar(valor);
+    const v = variar(valor * this.buffEquipe.mult);
     alvo.hp = Math.max(0, alvo.hp - v);
     this.eventos.push({ tipo: 'dano', alvo: alvo.uid, valor: v, critico });
     return v;
@@ -137,6 +175,27 @@ export class Batalha implements ContextoBatalha {
 
   adicionarEscudo(cargas: number) {
     this.escudo += cargas;
+  }
+
+  inimigoMaisFraco() {
+    return this.inimigosVivos().sort((a, b) => a.hp - b.hp)[0];
+  }
+
+  provocar(eu: HeroiBatalha, golpes: number, reducao: number) {
+    eu.provocacao = Math.max(eu.provocacao, golpes);
+    eu.reducao = Math.max(eu.reducao, reducao);
+  }
+
+  reforcarEquipe(multiplicador: number, ms: number) {
+    this.buffEquipe = { mult: Math.max(this.buffEquipe.mult, multiplicador), restante: Math.max(this.buffEquipe.restante, ms) };
+  }
+
+  enfraquecer(alvo: InimigoBatalha, ms: number) {
+    alvo.enfraquecido = Math.max(alvo.enfraquecido, ms);
+  }
+
+  darEnergia(alvo: HeroiBatalha, quantidade: number) {
+    if (alvo.hp > 0) alvo.energia = Math.min(100, alvo.energia + quantidade);
   }
 }
 

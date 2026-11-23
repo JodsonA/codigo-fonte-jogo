@@ -57,6 +57,22 @@ const ICONES: Record<string, string> = {
   check: icone(`
     <circle cx="32" cy="32" r="26" fill="#5cd65c" stroke="#2a7a2a" stroke-width="3"/>
     <path d="M18 33 L28 43 L47 22" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`),
+  energia: icone(`
+    <path d="M36 4 L12 36 L28 36 L24 60 L52 24 L34 24 Z" fill="#ffd34d" stroke="#b07a00" stroke-width="3" stroke-linejoin="round"/>`),
+  fichas: icone(`
+    <circle cx="32" cy="34" r="24" fill="#c0392b"/><circle cx="32" cy="30" r="24" fill="#ff7b86" stroke="#c0392b" stroke-width="3"/>
+    <circle cx="32" cy="30" r="15" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="6 4"/>
+    <text x="32" y="37" font-size="18" font-family="monospace" font-weight="bold" fill="#fff" text-anchor="middle">F</text>`),
+  estrela: icone(`
+    <path d="M32 4 L40 23 L60 24 L44 37 L50 58 L32 46 L14 58 L20 37 L4 24 L24 23 Z" fill="#ffd34d" stroke="#b07a00" stroke-width="3" stroke-linejoin="round"/>`),
+  instanciar: icone(`
+    <circle cx="32" cy="32" r="27" fill="#8e7cf0" stroke="#4b3fb5" stroke-width="3"/>
+    <circle cx="32" cy="32" r="18" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="4 5"/>
+    <text x="32" y="40" font-size="20" font-family="monospace" font-weight="bold" fill="#fff" text-anchor="middle">new</text>`),
+  loja: icone(`
+    <path d="M10 22 H54 L50 58 H14 Z" fill="#ff9f1c" stroke="#a0600a" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M22 24 V16 Q22 6 32 6 Q42 6 42 16 V24" stroke="#a0600a" stroke-width="4" fill="none"/>
+    <circle cx="32" cy="40" r="8" fill="#ffd34d" stroke="#a0600a" stroke-width="2"/>`),
   enigma: icone(`
     <rect x="8" y="8" width="48" height="48" rx="10" fill="#f5c542" stroke="#a07a10" stroke-width="3"/>
     <text x="32" y="44" font-size="30" font-family="monospace" font-weight="bold" fill="#5a3a00" text-anchor="middle">?</text>`),

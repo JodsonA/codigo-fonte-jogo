@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import { Batalha } from '../core/batalha';
-import { buscarFase, type Fase } from '../core/fases';
-import { jogo } from '../core/jogo';
+import { Batalha, TEMPO_LIMITE } from '../core/batalha';
+import { CAPITULOS, buscarFase, type Fase } from '../core/fases';
+import { DEVOLUCAO_DERROTA, jogo } from '../core/jogo';
 import { Heroi } from '../core/herois';
 import type { HeroiBatalha, InimigoBatalha } from '../core/tipos';
 import { ALTURA, Barra, Botao, COR, LARGURA, TXT, modal, texto } from './ui';
@@ -33,6 +33,7 @@ export class BatalhaScene extends Phaser.Scene {
   private escudo!: Phaser.GameObjects.Text;
   private velocidade = 1;
   private terminou = false;
+  private relogio!: Phaser.GameObjects.Text;
 
   constructor() { super('Batalha'); }
 
@@ -44,11 +45,12 @@ export class BatalhaScene extends Phaser.Scene {
   }
 
   create() {
-    this.add.image(0, 0, 'fundo-mapa').setOrigin(0).setDisplaySize(LARGURA, ALTURA);
+    const cap = CAPITULOS.find((c) => c.numero === this.fase.capitulo) ?? CAPITULOS[0];
+    this.add.image(0, 0, cap.fundo).setOrigin(0).setDisplaySize(LARGURA, ALTURA);
     this.add.rectangle(0, 0, LARGURA, ALTURA, 0x0b0820, 0.45).setOrigin(0);
     this.add.rectangle(0, 0, LARGURA, 66, 0x0b0820, 0.6).setOrigin(0);
 
-    this.batalha = new Batalha(this.fase, jogo.herois);
+    this.batalha = new Batalha(this.fase, jogo.equipe);
 
     this.cabecalho = texto(this, 20, 14, '', 20, TXT.normal, { fontStyle: 'bold' });
     texto(this, 20, 42, this.fase.descricao, 13, TXT.suave);
@@ -58,9 +60,14 @@ export class BatalhaScene extends Phaser.Scene {
       this.velocidade = this.velocidade === 1 ? 2 : 1;
       vel.setRotulo(`Velocidade ${this.velocidade}x`);
     }, COR.cinzaBotao, 14);
-    new Botao(this, LARGURA - 70, 32, 110, 38, 'Fugir', () => this.scene.start('Mapa'), COR.perigo, 14);
+    new Botao(this, LARGURA - 70, 32, 110, 38, 'Fugir', () => {
+      jogo.devolverEnergia(DEVOLUCAO_DERROTA);
+      this.scene.start('Mapa');
+    }, COR.perigo, 14);
+    this.relogio = texto(this, LARGURA - 300, 24, '', 15, TXT.normal, { fontStyle: 'bold' }).setOrigin(1, 0);
 
-    this.batalha.herois.forEach((u, i) => this.criarHeroi(u, 120, 170 + i * 150));
+    const n = this.batalha.herois.length;
+    this.batalha.herois.forEach((u, i) => (n <= 2 ? this.criarHeroi(u, 120, 170 + i * 150) : this.criarHeroiCompacto(u, 74, 120 + i * 104)));
     this.processarEventos();
   }
 
@@ -78,6 +85,25 @@ export class BatalhaScene extends Phaser.Scene {
       this, x + 145, y + 46, 190, 32,
       h.habilidadeDesbloqueada ? h.habilidade.nome : `${h.habilidade.nome} (nível ${Heroi.NIVEL_HABILIDADE})`,
       () => this.batalha.usarHabilidade(u) && this.processarEventos(), COR.ouro, 13,
+    );
+    this.herois.push({ unidade: u, corpo, vida, vidaTxt, energia, botao });
+  }
+
+  /** Layout para equipes de 3 ou 4 heróis. */
+  private criarHeroiCompacto(u: HeroiBatalha, x: number, y: number) {
+    const corpo = this.add.container(x, y);
+    const img = sprite(this, 0, 0, `heroi-${u.heroi.id}`, 96);
+    corpo.add(img);
+    this.tweens.add({ targets: img, scaleY: img.scaleY * 1.03, duration: 800 + Math.random() * 300, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    texto(this, x + 48, y - 36, `${u.heroi.nomeCurto} · nv ${u.heroi.nivel}`, 14, TXT.normal, { fontStyle: 'bold' });
+    const vida = new Barra(this, x + 48, y - 10, 170, 11, COR.ok);
+    const vidaTxt = texto(this, x + 222, y - 17, '', 11, TXT.suave);
+    const energia = new Barra(this, x + 48, y + 6, 170, 6, COR.ouro);
+    const h = u.heroi;
+    const botao = new Botao(
+      this, x + 133, y + 32, 170, 28,
+      h.habilidadeDesbloqueada ? h.habilidade.nome : `${h.habilidade.nome} (nv ${Heroi.NIVEL_HABILIDADE})`,
+      () => this.batalha.usarHabilidade(u) && this.processarEventos(), COR.ouro, 12,
     );
     this.herois.push({ unidade: u, corpo, vida, vidaTxt, energia, botao });
   }
@@ -105,6 +131,8 @@ export class BatalhaScene extends Phaser.Scene {
 
   update(_t: number, dt: number) {
     this.batalha.atualizar(Math.min(dt, 100) * this.velocidade);
+    const resta = Math.max(0, Math.ceil((TEMPO_LIMITE - this.batalha.tempo) / 1000));
+    this.relogio.setText(`${Math.floor(resta / 60)}:${String(resta % 60).padStart(2, '0')}`).setColor(resta <= 20 ? TXT.perigo : TXT.normal);
     this.processarEventos();
     this.atualizarBarras();
     if (!this.terminou && this.batalha.estado !== 'lutando') {
@@ -200,31 +228,39 @@ export class BatalhaScene extends Phaser.Scene {
 
   private finalizar() {
     if (this.batalha.estado === 'vitoria') {
-      const antes = jogo.herois.map((h) => h.habilidadeDesbloqueada);
+      const equipe = jogo.equipe;
+      const antes = equipe.map((h) => h.habilidadeDesbloqueada);
       const r = jogo.registrarVitoria(this.fase);
       const linhas = [`+${r.xp} XP para cada herói`, `+${r.bytes} Bytes`];
       if (r.commits > 0) linhas.push(`+${r.commits} Commits`);
       if (!r.primeira) linhas.push('(repetição: recompensa pela metade)');
       linhas.push('');
-      for (const n of r.niveis) if (n.subiu > 0) linhas.push(`${n.nome} subiu para o nível ${jogo.herois.find((h) => h.nomeCurto === n.nome)!.nivel}!`);
-      jogo.herois.forEach((h, i) => {
+      for (const n of r.niveis) if (n.subiu > 0) linhas.push(`${n.nome} subiu para o nível ${equipe.find((h) => h.nomeCurto === n.nome)!.nivel}!`);
+      equipe.forEach((h, i) => {
         if (!antes[i] && h.habilidadeDesbloqueada) linhas.push(`Nova habilidade: ${h.habilidade.nome}! Use quando a barra dourada encher.`);
       });
       let titulo = 'Vitória!';
       if (this.fase.id === '1-3' && r.primeira) {
         titulo = 'O Vale das Interfaces está livre!';
-        linhas.push('Você derrotou O Monolito e terminou o capítulo 1 do protótipo. Obrigado por jogar!');
+        linhas.push('Você derrotou O Monolito. O capítulo 2, a Cidadela Privada, foi liberado!');
+      }
+      if (this.fase.id === '2-3' && r.primeira) {
+        titulo = 'A Cidadela Privada está protegida!';
+        linhas.push('Você derrotou O Global Mutável e terminou os capítulos do protótipo. Obrigado por jogar!');
       }
       modal(this, titulo, linhas.join('\n').trim(), 'Voltar ao mapa', () => this.scene.start('Mapa'));
     } else {
+      jogo.devolverEnergia(DEVOLUCAO_DERROTA);
+      const esgotou = this.batalha.tempo >= TEMPO_LIMITE;
       modal(
         this,
-        'Os bugs venceram desta vez',
-        (this.fase.ondas.some((o) => o.some((m) => m.chefe)) && !jogo.herois.every((h) => h.habilidadeDesbloqueada)
-          ? `O Monolito é forte demais só com atacar(). Leve os heróis ao nível ${Heroi.NIVEL_HABILIDADE} para desbloquear Nota G e Decifrar. `
-          : '') +
-          'Dica: use Bytes para treinar ataque e vida, ou repita fases anteriores para ganhar XP. ' +
-          'Seus heróis também ganham XP em segundo plano com o tempo.',
+        esgotou ? 'O tempo acabou!' : 'Os bugs venceram desta vez',
+        `Metade da energia (${DEVOLUCAO_DERROTA}) foi devolvida. ` +
+          (this.fase.ondas.some((o) => o.some((m) => m.chefe)) && !jogo.equipe.every((h) => h.habilidadeDesbloqueada)
+            ? `Chefões são fortes demais só com atacar(). Leve os heróis ao nível ${Heroi.NIVEL_HABILIDADE} para desbloquear as habilidades. `
+            : '') +
+          'Monte uma equipe de até 4 heróis (Instanciar e Loja trazem novos). ' +
+          'Treine com Bytes ou repita fases para ganhar XP.',
         'Voltar ao mapa',
         () => this.scene.start('Mapa'),
       );

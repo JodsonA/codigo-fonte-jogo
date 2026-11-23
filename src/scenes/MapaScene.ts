@@ -1,8 +1,15 @@
 import Phaser from 'phaser';
-import { jogo } from '../core/jogo';
-import { buscarFase } from '../core/fases';
-import { ENIGMAS, marcoConcluido, marcosDoCapitulo, type Marco } from '../core/progresso';
-import { Botao, COR, LARGURA, Moeda, TXT, botaoVoltar, cartao, icone, ouvir, texto, titulo } from './ui';
+import { CUSTO_FASE, ENERGIA_MAX, jogo } from '../core/jogo';
+import { CAPITULOS, buscarFase, type Capitulo } from '../core/fases';
+import { ENIGMAS, capituloLiberado, marcoConcluido, marcosDoCapitulo, type Marco } from '../core/progresso';
+import { Botao, COR, LARGURA, Moeda, TXT, botaoVoltar, cartao, formatarTempo, icone, modal, ouvir, texto, titulo } from './ui';
+
+/** Capítulo mais avançado já liberado. */
+export function capituloAtual() {
+  return [...CAPITULOS].reverse().find((c) => capituloLiberado(jogo, c.numero)) ?? CAPITULOS[0];
+}
+
+export function textoEnergia(v: number) { return `${Math.floor(v)}/${ENERGIA_MAX}`; }
 
 const POSICOES = [
   { x: 140, y: 330 },
@@ -19,20 +26,31 @@ export class MapaScene extends Phaser.Scene {
   private aneis: Phaser.GameObjects.Arc[] = [];
   private detalhe?: Phaser.GameObjects.Container;
   private moedas: Moeda[] = [];
+  private cap!: Capitulo;
 
   constructor() { super('Mapa'); }
 
   create() {
-    this.marcos = marcosDoCapitulo();
+    const escolhido = CAPITULOS.find((c) => c.numero === this.registry.get('capitulo'));
+    this.cap = escolhido && capituloLiberado(jogo, escolhido.numero) ? escolhido : capituloAtual();
+    this.marcos = marcosDoCapitulo(this.cap.numero);
     this.aneis = [];
-    this.add.image(0, 0, 'fundo-mapa').setOrigin(0).setDisplaySize(LARGURA, 540);
+    this.add.image(0, 0, this.cap.fundo).setOrigin(0).setDisplaySize(LARGURA, 540);
 
     botaoVoltar(this, 'Início', 'Home');
-    titulo(this, LARGURA / 2 - 40, 16, 'Capítulo 1 · Vale das Interfaces', 24).setOrigin(0.5, 0);
+    titulo(this, LARGURA / 2 - 50, 16, `Capítulo ${this.cap.numero} · ${this.cap.nome}`, 24).setOrigin(0.5, 0);
     this.moedas = [
-      new Moeda(this, LARGURA - 262, 14, 'bytes', () => jogo.bytes, 130),
+      new Moeda(this, LARGURA - 262, 14, 'energia', () => jogo.energiaAtual(), 130, textoEnergia),
       new Moeda(this, LARGURA - 124, 14, 'commits', () => jogo.commits, 110),
     ];
+    CAPITULOS.forEach((c, i) => {
+      const liberado = capituloLiberado(jogo, c.numero);
+      const b = new Botao(this, 60 + i * 96, 84, 86, 30, liberado ? `Cap. ${c.numero}` : `Cap. ${c.numero}`, () => {
+        this.registry.set('capitulo', c.numero);
+        this.scene.restart();
+      }, c.numero === this.cap.numero ? COR.ouro : COR.cinzaBotao, 13, { raio: 15 });
+      b.setHabilitado(liberado);
+    });
     ouvir(this, 'idle', () => this.moedas.forEach((m) => m.atualizar()));
 
     this.desenharCaminho();
@@ -74,7 +92,7 @@ export class MapaScene extends Phaser.Scene {
     const base = this.add.circle(x, y + 5, r, Phaser.Display.Color.IntegerToColor(cor).darken(30).color);
     const no = this.add.circle(x, y, r, cor).setStrokeStyle(4, 0xffffff);
     if (chefe) {
-      this.add.image(x, y - 4, 'inimigo-O Monolito').setScale((r * 1.7) / 780).setAlpha(est === 'bloqueado' ? 0.5 : 1);
+      this.add.image(x, y - 4, `inimigo-${this.cap.chefe}`).setScale((r * 1.7) / 780).setAlpha(est === 'bloqueado' ? 0.5 : 1);
     } else if (m.tipo === 'enigma') {
       icone(this, x, y, 'enigma', 46).setAlpha(est === 'bloqueado' ? 0.5 : 1);
     } else {
@@ -117,9 +135,13 @@ export class MapaScene extends Phaser.Scene {
         c.add(img);
       });
       const rotulo = est === 'bloqueado' ? 'Bloqueada' : est === 'feito' ? 'Repetir' : 'LUTAR!';
-      const b = new Botao(this, LARGURA - 120, y0 + 50, 170, 58, rotulo, () => this.scene.start('Batalha', { faseId: f.id }), COR.laranja, 20, { icone: 'icone-espada', tamanhoIcone: 38 });
+      const b = new Botao(this, LARGURA - 120, y0 + 44, 170, 54, rotulo, () => this.lutar(f.id), COR.laranja, 20, { icone: 'icone-espada', tamanhoIcone: 36 });
       b.setHabilitado(est !== 'bloqueado');
       c.add(b);
+      if (est !== 'bloqueado') {
+        c.add(icone(this, LARGURA - 156, y0 + 86, 'energia', 16));
+        c.add(texto(this, LARGURA - 146, y0 + 79, `Custa ${CUSTO_FASE} de energia`, 11, TXT.ouro));
+      }
       if (est === 'bloqueado') {
         const motivo = f.enigmaAntes && !jogo.enigmaResolvido(f.enigmaAntes) ? 'Resolva o Portão do Enigma antes.' : 'Vença a fase anterior antes.';
         c.add(texto(this, LARGURA - 120, y0 + 84, motivo, 11, TXT.perigo).setOrigin(0.5, 0));
@@ -128,11 +150,27 @@ export class MapaScene extends Phaser.Scene {
       const e = ENIGMAS[m.id];
       c.add(titulo(this, 40, y0 + 12, e.titulo, 20, TXT.ouro));
       c.add(texto(this, 40, y0 + 42, e.enunciado, 13, TXT.normal, { wordWrap: { width: 600 } }));
-      c.add(texto(this, 40, y0 + 78, `Recompensa: +${e.recompensaCommits} Commits e o caminho até o chefão`, 12, TXT.suave));
+      c.add(texto(this, 40, y0 + 78, `Recompensa: +${e.recompensaCommits} Commits e o caminho até o chefão · não gasta energia`, 12, TXT.suave));
       const rotulo = est === 'feito' ? 'Resolvido' : est === 'bloqueado' ? 'Bloqueado' : 'RESOLVER';
-      const b = new Botao(this, LARGURA - 120, y0 + 50, 170, 58, rotulo, () => this.scene.start('Enigma'), COR.ouro, 20, { icone: 'icone-enigma', tamanhoIcone: 36 });
+      const cena = e.tipo === 'quiz' ? 'EnigmaQuiz' : 'Enigma';
+      const b = new Botao(this, LARGURA - 120, y0 + 50, 170, 58, rotulo, () => this.scene.start(cena, { id: e.id }), COR.ouro, 20, { icone: 'icone-enigma', tamanhoIcone: 36 });
       b.setHabilitado(est === 'liberado');
       c.add(b);
     }
+  }
+
+  private lutar(faseId: string) {
+    if (jogo.gastarEnergia(CUSTO_FASE)) {
+      this.scene.start('Batalha', { faseId });
+      return;
+    }
+    modal(
+      this,
+      'Sem energia',
+      `Cada fase custa ${CUSTO_FASE} de energia, e você tem ${Math.floor(jogo.energiaAtual())}. ` +
+        `A energia recarrega sozinha: +1 a cada 12 minutos, até ${ENERGIA_MAX}.\n\n` +
+        `Dá para jogar de novo em ${formatarTempo(jogo.msParaJogar()) || 'menos de 1 min'}. Enquanto isso, resolva enigmas, treine heróis ou use o Instanciar.`,
+      'Entendi',
+    );
   }
 }

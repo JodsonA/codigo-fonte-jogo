@@ -181,18 +181,22 @@ export function icone(cena: Phaser.Scene, x: number, y: number, nome: string, ta
 export class Moeda {
   private valor: Phaser.GameObjects.Text;
 
-  constructor(cena: Phaser.Scene, x: number, y: number, nomeIcone: string, private ler: () => number, w = 120) {
+  constructor(
+    cena: Phaser.Scene, x: number, y: number, nomeIcone: string, private ler: () => number, w = 120,
+    private formatar: (v: number) => string = (v) => `${Math.floor(v)}`,
+  ) {
     cartao(cena, x, y, w, 34, 0x120d33, 0.75, 0xffffff, 17);
     icone(cena, x + 16, y + 17, nomeIcone, 34);
     this.valor = titulo(cena, x + w - 14, y + 17, '', 17).setOrigin(1, 0.5);
     this.atualizar();
   }
 
-  atualizar() { this.valor.setText(`${Math.floor(this.ler())}`); }
+  atualizar() { this.valor.setText(this.formatar(this.ler())); }
 }
 
 export function formatarTempo(ms: number) {
   const min = Math.floor(ms / 60000);
+  if (min < 1) return 'menos de 1 min';
   const h = Math.floor(min / 60);
   const m = min % 60;
   return h > 0 ? `${h}h ${m}min` : `${m} min`;
@@ -232,4 +236,12 @@ export function botaoVoltar(cena: Phaser.Scene, rotulo: string, destino: string)
 export function ouvir(cena: Phaser.Scene, evento: string, fn: (...args: any[]) => void) {
   cena.game.events.on(evento, fn);
   cena.events.once('shutdown', () => cena.game.events.off(evento, fn));
+}
+
+/** Fileira de estrelas de raridade. */
+export function estrelas(cena: Phaser.Scene, x: number, y: number, n: number, tamanho = 16, centro = false) {
+  const imgs: Phaser.GameObjects.Image[] = [];
+  const x0 = centro ? x - ((n - 1) * (tamanho - 2)) / 2 : x;
+  for (let i = 0; i < n; i++) imgs.push(icone(cena, x0 + i * (tamanho - 2), y, 'estrela', tamanho));
+  return imgs;
 }

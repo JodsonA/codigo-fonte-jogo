@@ -11,14 +11,14 @@ export interface Arte {
   svg: string;
 }
 
-const svg = (w: number, h: number, corpo: string) =>
+export const svg = (w: number, h: number, corpo: string) =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="${w * 3}" height="${h * 3}" viewBox="0 0 ${w} ${h}">${corpo}</svg>`;
 
-const PELE = '#f2c9a5';
-const PELE_SOMBRA = '#e0ae86';
+export const PELE = '#f2c9a5';
+export const PELE_SOMBRA = '#e0ae86';
 
 /** Olhos grandes e expressivos no estilo do jogo. */
-function olhos(cx: number, cy: number, dist: number, cor = '#2b2340') {
+export function olhos(cx: number, cy: number, dist: number, cor = '#2b2340') {
   return [-1, 1]
     .map((s) => {
       const x = cx + s * dist;
@@ -109,7 +109,7 @@ const TURING = svg(160, 200, `
 
 // ------------------------------------------------------------------ Bugs
 
-const pernas = (cx: number, cy: number, abertura: number, cor: string) =>
+export const pernas = (cx: number, cy: number, abertura: number, cor: string) =>
   [-1, 1]
     .map((s) =>
       [-14, 0, 14]
@@ -118,7 +118,7 @@ const pernas = (cx: number, cy: number, abertura: number, cor: string) =>
     )
     .join('');
 
-const olhosBravos = (cx: number, cy: number, d: number) => `
+export const olhosBravos = (cx: number, cy: number, d: number) => `
   <circle cx="${cx - d}" cy="${cy}" r="5" fill="#fff"/><circle cx="${cx + d}" cy="${cy}" r="5" fill="#fff"/>
   <circle cx="${cx - d + 1}" cy="${cy + 1}" r="2.4" fill="#111"/><circle cx="${cx + d - 1}" cy="${cy + 1}" r="2.4" fill="#111"/>
   <path d="M${cx - d - 6} ${cy - 8} L${cx - 2} ${cy - 4} M${cx + d + 6} ${cy - 8} L${cx + 2} ${cy - 4}" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>`;

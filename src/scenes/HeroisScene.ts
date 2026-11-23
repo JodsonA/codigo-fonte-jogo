@@ -3,7 +3,8 @@ import { jogo } from '../core/jogo';
 import { Heroi, type Atributo } from '../core/herois';
 import { sprite } from './BootScene';
 import { mostrarCodigo } from './codigo';
-import { ALTURA, Barra, Botao, COR, LARGURA, Moeda, TXT, aviso, botaoVoltar, cartao, ouvir, texto, titulo } from './ui';
+import { ALTURA, Barra, Botao, COR, LARGURA, Moeda, TXT, aviso, botaoVoltar, cartao, estrelas, icone, ouvir, texto, titulo } from './ui';
+import { TAMANHO_EQUIPE } from '../core/jogo';
 
 const MARCOS_EVOLUCAO = [
   { nivel: 1, nome: 'atacar()', desc: 'Ataque básico' },
@@ -19,7 +20,10 @@ export class HeroisScene extends Phaser.Scene {
 
   constructor() { super('Herois'); }
 
-  private get selecionado() { return (this.registry.get('lider') as number | undefined) ?? 0; }
+  private get selecionado() {
+    const i = jogo.herois.findIndex((h) => h.id === this.registry.get('liderId'));
+    return i >= 0 ? i : 0;
+  }
 
   create() {
     this.add.image(0, 0, 'fundo-home').setOrigin(0).setDisplaySize(LARGURA, ALTURA);
@@ -32,7 +36,9 @@ export class HeroisScene extends Phaser.Scene {
     ];
 
     this.abas = [];
+    this.marcasEquipe = [];
     jogo.herois.forEach((h, i) => this.criarAba(h, i));
+    texto(this, 16, 466, 'E = está na equipe', 11, TXT.suave);
     this.mostrar();
 
     ouvir(this, 'idle', (g: { niveis: { nome: string; subiu: number }[] }) => {
@@ -41,31 +47,39 @@ export class HeroisScene extends Phaser.Scene {
     });
   }
 
+  private posAba(i: number) {
+    return { x: 16 + (i % 2) * 74, y: 74 + Math.floor(i / 2) * 96 };
+  }
+
   private criarAba(h: Heroi, i: number) {
-    const x = 26;
-    const y = 80 + i * 132;
+    const { x, y } = this.posAba(i);
     const g = this.add.graphics();
     this.abas.push(g);
-    const rosto = this.add.image(x + 54, y + 50, `heroi-${h.id}`);
-    rosto.setScale(130 / rosto.height).setY(y + 50 + 65 - 39);
-    const mascara = this.make.graphics({}, false).fillRoundedRect(x + 6, y + 6, 96, 82, 12);
+    const rosto = this.add.image(x + 34, y, `heroi-${h.id}`);
+    rosto.setScale(100 / rosto.height).setY(y + 6 + 50 - 6);
+    const mascara = this.make.graphics({}, false).fillRoundedRect(x + 4, y + 4, 60, 58, 10);
     rosto.setMask(mascara.createGeometryMask());
-    titulo(this, x + 54, y + 94, h.nomeCurto, 15).setOrigin(0.5, 0);
-    const zona = this.add.zone(x, y, 108, 120).setOrigin(0).setInteractive({ useHandCursor: true });
-    zona.on('pointerdown', () => { this.registry.set('lider', i); this.mostrar(); });
+    if (h.raridade > 3) estrelas(this, x + 34, y + 70, h.raridade, 11, true);
+    titulo(this, x + 34, y + 76, h.nomeCurto, 12).setOrigin(0.5, 0);
+    const marca = texto(this, x + 60, y + 2, 'E', 11, '#0e1118', { fontStyle: 'bold', backgroundColor: '#f5c542', padding: { x: 4, y: 1 } }).setOrigin(1, 0);
+    this.marcasEquipe.push({ id: h.id, marca });
+    const zona = this.add.zone(x, y, 68, 92).setOrigin(0).setInteractive({ useHandCursor: true });
+    zona.on('pointerdown', () => { this.registry.set('liderId', h.id); this.mostrar(); });
   }
+
+  private marcasEquipe: { id: string; marca: Phaser.GameObjects.Text }[] = [];
 
   private desenharAbas() {
     this.abas.forEach((g, i) => {
-      const x = 26;
-      const y = 80 + i * 132;
+      const { x, y } = this.posAba(i);
       const sel = i === this.selecionado;
       g.clear();
-      g.fillStyle(0x000000, 0.25).fillRoundedRect(x, y + 4, 108, 120, 14);
-      g.fillStyle(sel ? 0x3b2fa0 : 0x1d1747, 0.95).fillRoundedRect(x, y, 108, 120, 14);
-      g.fillStyle(jogo.herois[i].cor, 1).fillRoundedRect(x + 6, y + 6, 96, 82, 12);
-      g.lineStyle(sel ? 4 : 2, sel ? COR.ouro : 0xffffff, sel ? 1 : 0.25).strokeRoundedRect(x, y, 108, 120, 14);
+      g.fillStyle(0x000000, 0.25).fillRoundedRect(x, y + 3, 68, 92, 12);
+      g.fillStyle(sel ? 0x3b2fa0 : 0x1d1747, 0.95).fillRoundedRect(x, y, 68, 92, 12);
+      g.fillStyle(jogo.herois[i].cor, 1).fillRoundedRect(x + 4, y + 4, 60, 58, 10);
+      g.lineStyle(sel ? 3 : 2, sel ? COR.ouro : 0xffffff, sel ? 1 : 0.25).strokeRoundedRect(x, y, 68, 92, 12);
     });
+    for (const m of this.marcasEquipe) m.marca.setVisible(jogo.naEquipe(m.id));
   }
 
   private assinatura = '';
@@ -85,7 +99,7 @@ export class HeroisScene extends Phaser.Scene {
 
     // Palco
     const palco = this.add.graphics();
-    palco.fillStyle(0x1a1250, 0.6).fillEllipse(320, 470, 250, 60);
+    palco.fillStyle(0x1a1250, 0.6).fillEllipse(318, 470, 250, 60);
     palco.fillStyle(h.cor, 1).fillEllipse(320, 460, 230, 52);
     palco.fillStyle(0x2b6fd6, 1).fillEllipse(320, 456, 200, 40);
     c.add(palco);
@@ -96,8 +110,15 @@ export class HeroisScene extends Phaser.Scene {
     // Painel de informações
     const x = 480;
     c.add(cartao(this, x, 70, 460, 456, 0x1d1747, 0.92));
-    c.add(titulo(this, x + 20, 84, h.nome, 24, TXT.ouro));
-    c.add(texto(this, x + 20, 116, `${h.papel} · inspiração: ${h.inspiracao}`, 13, TXT.suave));
+    c.add(titulo(this, x + 20, 80, h.nome, 22, TXT.ouro));
+    if (h.raridade > 3) c.add(estrelas(this, x + 28, 122, h.raridade, 16));
+    c.add(texto(this, x + 20 + (h.raridade > 3 ? h.raridade * 14 + 8 : 0), 114, `${h.papel} · inspiração: ${h.inspiracao}`, 12, TXT.suave));
+    const naEquipe = jogo.naEquipe(h.id);
+    c.add(new Botao(this, x + 384, 96, 130, 30, naEquipe ? 'Na equipe ✓' : 'Pôr na equipe', () => {
+      aviso(this, jogo.alternarEquipe(h.id));
+      this.mostrar();
+    }, naEquipe ? COR.ok : COR.destaque, 13));
+    c.add(texto(this, x + 384, 116, `Equipe ${jogo.equipeIds.length}/${TAMANHO_EQUIPE}`, 11, TXT.suave).setOrigin(0.5, 0));
 
     c.add(titulo(this, x + 20, 142, `Nível ${h.nivel}`, 20));
     c.add(texto(this, x + 440, 148, `${Math.floor(h.xp)} / ${h.xpParaProximo} XP`, 12, TXT.suave).setOrigin(1, 0));
