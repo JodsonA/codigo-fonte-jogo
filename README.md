@@ -32,3 +32,8 @@ npm run build    # gera a pasta dist/ para publicar
 - **Equipe:** até 4 heróis lutam e recebem XP.
 
 O progresso fica salvo no `localStorage` do navegador.
+
+## Publicar online
+
+- **GitHub Pages:** o workflow `.github/workflows/pages.yml` gera o build e publica a cada push na `main`. Para ativar, vá em Settings > Pages e escolha "GitHub Actions" como fonte. Em conta gratuita, o repositório precisa ser público.
+- **itch.io ou qualquer hospedagem estática:** rode `npm run build` e envie o conteúdo da pasta `dist/` (no itch.io, compacte em .zip e marque "This file will be played in the browser").
